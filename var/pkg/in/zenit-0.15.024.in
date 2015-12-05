@@ -1,0 +1,23 @@
+echo -en "\n[!] ATTENTION!!!
+Initialization that package may harm your system!
+Please, before reboot read (and if necessary, edit) files
+\"/etc/inittab\", \"/etc/i\"
+
+Original /etc/inittab will saved in /etc/inittab.bck_`date +%F`
+
+Are you shure processeed? [y/n]  "
+
+read confirm
+
+case $confirm in
+  y) if [ ! -r /etc/inittab.bck ]; then
+       if [ -r /etc/inittab ]; then
+         cp -v /etc/inittab{,.bck_`date +%F`}
+       fi
+     fi
+     cp -v /etc/inittab{.zenit,}
+     echo -e '\nInitialization complete!\n'
+     ;;
+  *) echo -e '\nInitialization aborted! Exit\n'
+     ;;
+esac

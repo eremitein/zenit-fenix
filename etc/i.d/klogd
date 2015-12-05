@@ -1,0 +1,81 @@
+#!/bin/bash
+PATH=/bin:/sbin:/usr/sbin:/usr/bin
+e="echo -e"
+b=`basename $0`
+p="$b"
+
+check_stat () {
+if [ `pgrep -fox "$p"` ]; then
+  prog_stat=`pgrep -fox "$p"`
+else
+  prog_stat=
+fi
+}
+
+fail_exit () {
+  $e "\033[1;31m * arghhhh!\033[0;0m something wrong"
+  exit 1
+}
+
+start () {
+check_stat
+  if [ ! $prog_stat ]; then
+    $p ||fail_exit
+    $e "\033[1;33m *\033[0;0m $b starting..."
+    sleep 1
+    status
+  else
+    $e "\033[1;33m *\033[0;0m $b already run:\t `pgrep -d, -fx "$p"`"
+  fi
+}
+
+stop () {
+check_stat
+  if [ $prog_stat ]; then
+    pkill -fox "$p" ||fail_exit
+    $e -n "\033[1;31m *\033[0;0m $b stopping..."
+    sleep 1
+    $e "\033[1;32m done\033[0;0m"
+  else
+    $e "\033[1;31m *\033[0;0m $b not run!"
+  fi
+}
+
+reload () {
+check_stat
+  if [ $prog_stat ]; then
+    pkill -HUP -fox "$p" ||fail_exit
+    $e -n "\033[1;33m *\033[0;0m $b reloading configs..."
+    sleep 1
+    $e "\033[1;32m done\033[0;0m"
+    status
+  else
+    $e "\033[1;31m *\033[0;0m $b not run!"
+  fi
+}
+
+status () {
+check_stat
+  if [ $prog_stat ]; then
+    $e "\033[1;32m *\033[0;0m $b run:\t `pgrep -d, -fx "$p"`"
+  else
+    $e "\033[1;31m *\033[0;0m $b not run!"
+  fi
+}
+
+case "$1" in
+  start) start
+  ;;
+  stop) stop
+  ;;
+  restart)
+  stop ; start
+  ;;
+  reload) reload
+  ;;
+  status|stat) status
+  ;;
+  *) $e "\033[1;33mUsage:\033[0;0m services $b {start stop restart reload status} (e.g. \"services $b stat\")"
+  exit 1
+  ;;
+esac

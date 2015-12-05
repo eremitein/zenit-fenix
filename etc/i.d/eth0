@@ -1,0 +1,46 @@
+#!/bin/bash
+PATH=/bin:/sbin:/usr/sbin:/usr/bin
+e="echo -e"
+b=`basename $0`
+eth_ip="192.168.8.13/24"
+
+fail_exit () {
+  $e "\033[1;31m * arghhhh!\033[0;0m something wrong"
+  exit 1
+}
+
+start () {
+  shift
+  $e -n "\033[1;33m *\033[0;0m $b starting..."
+  ip l set $b up ||fail_exit
+  ip a a "$eth_ip" dev $b ||fail_exit
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+  status
+}
+
+stop () {
+  $e -n "\033[1;31m *\033[0;0m $b stopping..."
+  ip a d "$eth_ip" dev $b ||fail_exit
+  #ip l set $b down ||fail_exit
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+}
+
+status () {
+  ip -s a show $b
+}
+
+case "$1" in
+  start) start $@
+  ;;
+  stop) stop $@
+  ;;
+  restart) stop $@ ; start $@
+  ;;
+  status|stat) status $@
+  ;;
+  *) $e " \033[1;33mUsage:\033[0;0m services $b {start stop restart status}  (e.g. \"services $b stat\")"
+  exit 1
+  ;;
+esac

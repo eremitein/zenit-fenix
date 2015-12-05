@@ -1,0 +1,44 @@
+#!/bin/bash
+b=`basename $0`
+e='echo -e'
+
+func_calls () {
+  if [ ! -r /etc/i.d/${1} ]; then
+    $e " \033[1;31m*\033[0;0m Service /etc/i.d/${1} not found!"
+    exit 1
+  fi
+  /etc/i.d/$@
+}
+
+all_serv_stat () {
+  for S in /etc/i.d/*[!~] ; do
+    if [ -x $S ] ; then
+      S=`basename $S`
+      if [ ! `pidof -s $S` ]; then
+        $e "$S\r\t\t :\033[1;31mdown\033[0;0m"
+      else
+        $e "$S\r\t\t :\033[1;32mup\033[0;0m"
+      fi
+    fi
+  done
+}
+
+if [ ! $1 ]; then
+  $e " Usage: $b {service_name} {service_options ...} e.g. \"$b openvpn start client0\""
+  exit 1
+fi
+
+case "$1" in
+  all)
+    case "$2" in
+      up) all_serv_stat |grep ";32mup"
+      ;;
+      down) all_serv_stat |grep ";31mdown"
+      ;;
+      *) all_serv_stat
+      ;;
+    esac
+  ;;
+  *) func_calls $@
+  ;;
+esac

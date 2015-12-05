@@ -1,0 +1,96 @@
+#!/bin/sh
+PATH=/bin:/sbin:/usr/sbin:/usr/bin
+e="echo -e"
+b=`basename $0`
+
+fail_exit () {
+  $e "\033[1;31m * arghhhh!\033[0;0m something wrong"
+  exit 1
+}
+
+start () {
+  shift
+  $e -n "\033[1;33m *\033[0;0m $b rules activating..."
+  echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+  echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+  echo 0 > /proc/sys/net/ipv4/conf/default/accept_source_route
+  echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+  echo 0 > /proc/sys/net/ipv4/conf/default/accept_redirects
+  echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects
+  echo 0 > /proc/sys/net/ipv4/conf/default/send_redirects
+  echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
+  echo 1 > /proc/sys/net/ipv4/conf/default/rp_filter
+  echo 1 > /proc/sys/net/ipv4/conf/all/log_martians
+  echo 1 > /proc/sys/net/ipv4/conf/default/log_martians
+  echo 2 > /proc/sys/net/ipv4/ip_dynaddr
+  echo 0 > /proc/sys/net/ipv4/tcp_ecn
+  iptables -P INPUT   DROP
+  iptables -P FORWARD DROP
+  iptables -P OUTPUT  DROP
+  iptables -F
+  iptables -X
+  iptables -Z
+  iptables -t nat -F
+  iptables -A INPUT  -i lo -j ACCEPT
+  iptables -A INPUT  -i eth+ -j ACCEPT
+  iptables -A OUTPUT -j ACCEPT
+  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  iptables -A FORWARD ! -i ppp+ -m conntrack --ctstate NEW -j ACCEPT
+  iptables -t nat -A POSTROUTING -o ppp+ -j MASQUERADE
+  iptables -A INPUT   -j LOG --log-prefix "FIREWALL:INPUT "
+  iptables -A FORWARD -j LOG --log-prefix "FIREWALL:FORWARD "
+  iptables -A OUTPUT  -j LOG --log-prefix "FIREWALL:OUTPUT "
+  echo 1 > /proc/sys/net/ipv4/ip_forward
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+  status
+}
+
+stop () {
+  $e -n "\033[1;31m *\033[0;0m $b rules deactivating..."
+  iptables -F
+  iptables -X
+  iptables -Z
+  iptables -t nat -F
+  echo 0 > /proc/sys/net/ipv4/ip_forward
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+}
+
+save () {
+  $e -n "\033[1;31m *\033[0;0m $b rules saving..."
+  iptables-save > /etc/iptables.save ||fail_exit
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+}
+
+restore () {
+  $e -n "\033[1;31m *\033[0;0m $b rules restoring..."
+  iptables-restore < /etc/iptables.save ||fail_exit
+  sleep 1
+  $e "\033[1;32m done\033[0;0m"
+}
+
+status () {
+  iptables -vL ; echo -e "\r"; iptables -vL -t nat
+}
+
+case "$1" in
+  start) start $@
+  ;;
+  stop) stop $@
+  ;;
+  restart) stop $@ ; start $@
+  ;;
+  save) save $@
+  ;;
+  restore) restore $@
+  ;;
+  status|stat) status $@
+  ;;
+  *) $e "\033[1;33mUsage:\033[0;0m services $b {start stop restart save restore status} (e.g. \"services $b stat\")"
+  exit 1
+  ;;
+esac
+
