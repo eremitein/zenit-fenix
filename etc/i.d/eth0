@@ -40,7 +40,7 @@ case "$1" in
   ;;
   status|stat) status $@
   ;;
-  *) $e " \033[1;33mUsage:\033[0;0m services $b {start stop restart status}  (e.g. \"services $b stat\")"
+  *) $e "\033[1;33mUsage:\033[0;0m services $b {start stop restart status}  (e.g. \"services $b stat\")"
   exit 1
   ;;
 esac

@@ -135,10 +135,11 @@ s_local() {
   #hdparm -B254 -S0 /dev/sda
   #fbset -s > /etc/fb.modes
   alsactl restore
+  pwrstate s
 }
 
 s_halt() {
-  nbd_u${m} &>/dev/null
+  nbd_u${m} all &>/dev/null
 
   fuser -av -m / &> /var/log/fuser_1.log
   $e "\r\033[0K\033[1;33m *\033[0;0m Sending all processes the TERM signal"
